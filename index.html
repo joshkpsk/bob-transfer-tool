@@ -100,6 +100,8 @@
   #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy2);border:1px solid var(--navy3);color:var(--white);padding:10px 18px;border-radius:7px;font-size:13px;opacity:0;transition:all .2s;pointer-events:none;z-index:300;white-space:nowrap;}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   .status-active{color:var(--green);}.status-inactive{color:var(--slate);}.status-noaccount{color:var(--amber);}
+  .risk-high{color:#fca5a5;font-weight:600;font-family:'IBM Plex Mono',monospace;}
+  .risk-locked{color:var(--amber);font-size:10px;margin-left:4px;}
 </style>
 </head>
 <body>
@@ -132,7 +134,7 @@
   <input type="file" id="fileInput" accept=".csv" onchange="handleClientFile(event)">
   <input type="file" id="fileInputEmp" accept=".csv" onchange="handleEmpFile(event)">
   <p style="font-size:12px;color:var(--slate);text-align:center">
-    Client columns: PARENT_ID, CHILD_ID, PARENT_NAME, STATUS, OFFICER_NAME, OFFICER_CODE, ROLE, MARKET, BRANCH, ANNUAL_SALES_SIZE, CREDIT_EXPOSURE<br>
+    Client columns: PARENT_ID, CHILD_ID, PARENT_NAME, STATUS, OFFICER_NAME, OFFICER_CODE, ROLE, MARKET, BRANCH, ANNUAL_SALES_SIZE, CREDIT_EXPOSURE, RISK_RATING<br>
     Employee columns: OFFICER_CODE, OFFICER_NAME, ROLE, MARKET, BRANCH
   </p>
 </div>
@@ -178,6 +180,7 @@
               <th onclick="sortBy('BRANCH')">Branch <span class="sort-icon" id="sort-BRANCH">↕</span></th>
               <th onclick="sortBy('ANNUAL_SALES_SIZE')">Sales Size <span class="sort-icon" id="sort-ANNUAL_SALES_SIZE">↕</span></th>
               <th onclick="sortBy('CREDIT_EXPOSURE')">Credit Exp. <span class="sort-icon" id="sort-CREDIT_EXPOSURE">↕</span></th>
+              <th onclick="sortBy('RISK_RATING')">Risk Rating <span class="sort-icon" id="sort-RISK_RATING">↕</span></th>
               <th style="min-width:200px">Assign New Officer</th>
             </tr></thead>
             <tbody id="tableBody"></tbody>
@@ -301,7 +304,8 @@ function processData(clientRows, employeeRows){
     else if((sales>=1000000&&sales<=3000000)||(credit>=100000&&credit<=1000000)) recRole='VRM';
     else if(sales<1000000&&credit<100000) recRole='BM';
     const mismatch = parentRow.ROLE && recRole!=='NONE' && parentRow.ROLE!==recRole;
-    return { ...parentRow, _childCount:children.length, _salesNum:sales, _creditNum:credit, _recRole:recRole, _mismatch:mismatch };
+    const riskRating = parseInt(parentRow.RISK_RATING, 10) || 0;
+    return { ...parentRow, _childCount:children.length, _salesNum:sales, _creditNum:credit, _recRole:recRole, _mismatch:mismatch, _riskRating:riskRating };
   });
   // Build officer list from the dedicated Employee Table (v2 approach)
   OFFICERS = employeeRows.map(e=>({
@@ -326,6 +330,7 @@ function parseDollar(s){ if(!s) return 0; return parseFloat(s.replace(/[$,\s]/g,
 // ELIGIBILITY — officer must match the client's recommended role and same market
 function getEligibleOfficers(row){
   if(row._recRole==='NONE') return [];
+  if(row._riskRating >= 15) return []; // High risk clients cannot be reassigned
   return OFFICERS.filter(o=>
     o.code!==row.OFFICER_CODE &&
     o.role===row._recRole &&
@@ -383,7 +388,7 @@ function sortBy(col){
 function applySort(rerender){
   filteredData.sort((a,b)=>{
     let av=a[sortCol],bv=b[sortCol];
-    if(['ANNUAL_SALES_SIZE','CREDIT_EXPOSURE','DEPOSIT_BALANCE'].includes(sortCol)){av=parseDollar(av);bv=parseDollar(bv);}
+    if(['ANNUAL_SALES_SIZE','CREDIT_EXPOSURE','DEPOSIT_BALANCE','RISK_RATING'].includes(sortCol)){av=parseDollar(av);bv=parseDollar(bv);}
     else{av=(av||'').toString().toLowerCase();bv=(bv||'').toString().toLowerCase();}
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
@@ -427,6 +432,7 @@ function renderTable(){
       <td>${row.BRANCH}</td>
       <td class="mono">${row.ANNUAL_SALES_SIZE||'$0'}</td>
       <td class="mono">${row.CREDIT_EXPOSURE||'$0'}</td>
+      <td class="mono ${row._riskRating>=15?'risk-high':''}">${row._riskRating}${row._riskRating>=15?'<span class="risk-locked" title="Transfer locked: Risk Rating ≥ 15">🔒</span>':''}</td>
       <td><div class="assignment-cell">
         <select class="${ac}" onchange="assignOfficer('${pid}',this)">${opts.join('')}</select>
         ${asgn?`<span class="check-icon">✓</span><span class="clear-btn" onclick="clearAssignment('${pid}')">✕</span>`:''}
