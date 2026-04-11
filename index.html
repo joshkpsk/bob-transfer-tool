@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Book of Business — Client Transfer Tool</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+  :root {
+    --navy:#0a1628;--navy2:#112240;--navy3:#1a3252;--teal:#0d9488;--teal-light:#14b8a6;
+    --amber:#f59e0b;--amber-light:#fcd34d;--slate:#94a3b8;--slate-light:#cbd5e1;
+    --white:#f1f5f9;--red:#ef4444;--green:#22c55e;--panel:#0e1f38;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'IBM Plex Sans',sans-serif;background:var(--navy);color:var(--white);min-height:100vh;}
+  header{background:var(--navy2);border-bottom:1px solid var(--navy3);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;}
+  .header-brand{display:flex;align-items:center;gap:12px;}
+  .header-brand .badge{background:var(--teal);color:white;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;padding:2px 7px;border-radius:3px;}
+  .header-brand h1{font-size:14px;font-weight:600;color:var(--white);}
+  .header-actions{display:flex;gap:10px;align-items:center;}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:5px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;}
+  .btn-primary{background:var(--teal);color:white;}.btn-primary:hover{background:var(--teal-light);}
+  .btn-secondary{background:var(--navy3);color:var(--slate-light);border:1px solid rgba(255,255,255,.1);}.btn-secondary:hover{background:rgba(255,255,255,.07);}
+  .btn-danger{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);}.btn-danger:hover{background:rgba(239,68,68,.25);}
+  .btn-sm{padding:4px 10px;font-size:12px;}
+  .btn-export{background:var(--amber);color:var(--navy);font-weight:600;}.btn-export:hover{background:var(--amber-light);}
+  .btn-upload{background:rgba(13,148,136,.15);color:var(--teal-light);border:1px solid rgba(13,148,136,.3);}.btn-upload:hover{background:rgba(13,148,136,.25);}
+  /* UPLOAD SCREEN */
+  #uploadScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:calc(100vh - 56px);gap:20px;}
+  .upload-card{background:var(--navy2);border:2px dashed var(--navy3);border-radius:12px;padding:48px 64px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;transition:border-color .2s;cursor:pointer;}
+  .upload-card:hover,.upload-card.drag-over{border-color:var(--teal);background:rgba(13,148,136,.05);}
+  .upload-card svg{color:var(--teal);opacity:.7;}
+  .upload-card h2{font-size:16px;font-weight:600;}
+  .upload-card p{font-size:13px;color:var(--slate);}
+  .upload-card .file-hint{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--teal-light);background:rgba(13,148,136,.1);padding:4px 10px;border-radius:4px;}
+  #fileInput{display:none;}
+  /* APP SCREEN */
+  #appScreen{display:none;}
+  .app-body{display:grid;grid-template-columns:1fr 360px;height:calc(100vh - 56px);overflow:hidden;}
+  .main-panel{overflow-y:auto;padding:20px;}
+  .side-panel{background:var(--panel);border-left:1px solid var(--navy3);display:flex;flex-direction:column;overflow:hidden;}
+  .filters-bar{background:var(--navy2);border:1px solid var(--navy3);border-radius:8px;padding:14px 16px;margin-bottom:16px;display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;}
+  .filter-group{display:flex;flex-direction:column;gap:4px;}
+  .filter-group label{font-size:11px;font-weight:500;color:var(--slate);letter-spacing:.5px;text-transform:uppercase;}
+  .filter-group select,.filter-group input{background:var(--navy);border:1px solid var(--navy3);border-radius:5px;color:var(--white);font-family:'IBM Plex Sans',sans-serif;font-size:13px;padding:6px 10px;min-width:140px;outline:none;transition:border-color .15s;}
+  .filter-group select:focus,.filter-group input:focus{border-color:var(--teal);}
+  .filter-group input{min-width:180px;}
+  .filter-actions{margin-left:auto;display:flex;gap:8px;align-items:flex-end;}
+  .stats-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+  .stat-card{background:var(--navy2);border:1px solid var(--navy3);border-radius:7px;padding:10px 16px;flex:1;min-width:110px;}
+  .stat-card .label{font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+  .stat-card .value{font-size:20px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:var(--teal-light);}
+  .stat-card.orange .value{color:var(--amber);}.stat-card.green .value{color:var(--green);}
+  .table-wrap{background:var(--navy2);border:1px solid var(--navy3);border-radius:8px;overflow:hidden;}
+  .table-header-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--navy3);}
+  .table-header-row h2{font-size:13px;font-weight:600;}.table-header-row .count{font-size:12px;color:var(--slate);font-family:'IBM Plex Mono',monospace;}
+  .select-all-bar{padding:8px 16px;background:rgba(13,148,136,.1);border-bottom:1px solid rgba(13,148,136,.2);display:flex;align-items:center;gap:10px;font-size:12px;color:var(--teal-light);}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  thead th{background:var(--navy);padding:9px 10px;text-align:left;font-size:10px;font-weight:600;color:var(--slate);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;position:sticky;top:0;border-bottom:1px solid var(--navy3);cursor:pointer;user-select:none;}
+  thead th:hover{color:var(--white);}
+  thead th .sort-icon{color:var(--navy3);margin-left:3px;}thead th.sorted .sort-icon{color:var(--teal);}
+  tbody tr{border-bottom:1px solid rgba(255,255,255,.04);transition:background .1s;}
+  tbody tr:hover{background:rgba(255,255,255,.03);}tbody tr.selected{background:rgba(13,148,136,.1);}tbody tr.assigned{background:rgba(34,197,94,.05);}
+  tbody td{padding:7px 10px;color:var(--slate-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;}
+  tbody td.mono{font-family:'IBM Plex Mono',monospace;font-size:11px;}
+  .role-badge{display:inline-block;padding:2px 6px;border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;}
+  .role-BM{background:rgba(99,102,241,.2);color:#a5b4fc;}.role-VRM{background:rgba(234,179,8,.2);color:#fde68a;}.role-BBRM{background:rgba(239,68,68,.2);color:#fca5a5;}
+  .child-badge{display:inline-block;padding:1px 5px;border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:10px;background:rgba(148,163,184,.15);color:var(--slate);margin-left:4px;}
+  .assignment-cell{display:flex;align-items:center;gap:6px;}
+  .assignment-cell select{background:var(--navy);border:1px solid var(--navy3);border-radius:4px;color:var(--white);font-family:'IBM Plex Sans',monospace;font-size:11px;padding:3px 6px;cursor:pointer;max-width:160px;outline:none;}
+  .assignment-cell select:focus{border-color:var(--teal);}.assignment-cell select.assigned{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.05);}
+  .check-icon{color:var(--green);font-size:14px;}.clear-btn{color:var(--red);cursor:pointer;font-size:14px;opacity:.7;}.clear-btn:hover{opacity:1;}
+  input[type="checkbox"]{width:14px;height:14px;cursor:pointer;accent-color:var(--teal);}
+  .pagination{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--navy3);font-size:12px;color:var(--slate);}
+  .pagination-btns{display:flex;gap:4px;}
+  .page-btn{background:var(--navy);border:1px solid var(--navy3);color:var(--slate-light);padding:4px 9px;border-radius:4px;cursor:pointer;font-size:12px;transition:all .1s;}
+  .page-btn:hover{background:var(--navy3);}.page-btn.active{background:var(--teal);border-color:var(--teal);color:white;}.page-btn:disabled{opacity:.3;cursor:not-allowed;}
+  .side-header{padding:14px 16px;border-bottom:1px solid var(--navy3);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+  .side-header h3{font-size:13px;font-weight:600;}.side-header .pending-count{background:var(--teal);color:white;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:2px 7px;border-radius:10px;}
+  .side-actions{padding:10px 16px;border-bottom:1px solid var(--navy3);display:flex;gap:8px;flex-shrink:0;}
+  #pendingList{flex:1;overflow-y:auto;padding:12px;}
+  .empty-state{display:flex;flex-direction:column;align-items:center;gap:10px;padding:40px 20px;text-align:center;color:var(--slate);font-size:12px;}
+  .pending-officer{background:var(--navy2);border:1px solid var(--navy3);border-radius:7px;margin-bottom:10px;overflow:hidden;}
+  .pending-officer-header{padding:8px 12px;display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:600;border-bottom:1px solid var(--navy3);background:rgba(255,255,255,.02);}
+  .arrow-label{font-size:11px;color:var(--amber);font-weight:500;}
+  .pending-summary{padding:8px 12px;font-size:11px;}
+  .summary-header{display:grid;grid-template-columns:1fr 40px 40px 40px;color:var(--slate);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.05);}
+  .summary-row{display:grid;grid-template-columns:1fr 40px 40px 40px;align-items:center;padding:2px 0;color:var(--slate-light);}
+  .officer-name{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .additions{color:var(--green);font-family:'IBM Plex Mono',monospace;text-align:center;}
+  .subtractions{color:#fca5a5;font-family:'IBM Plex Mono',monospace;text-align:center;}
+  .ending{font-family:'IBM Plex Mono',monospace;text-align:center;font-weight:600;color:var(--white);}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center;}
+  .modal{background:var(--navy2);border:1px solid var(--navy3);border-radius:10px;padding:24px;width:420px;max-width:95vw;}
+  .modal h3{font-size:15px;font-weight:600;margin-bottom:6px;}.modal p{font-size:12px;color:var(--slate);margin-bottom:16px;}
+  .modal select{width:100%;background:var(--navy);border:1px solid var(--navy3);border-radius:5px;color:var(--white);font-family:'IBM Plex Sans',sans-serif;font-size:13px;padding:8px 10px;outline:none;margin-bottom:16px;}
+  .modal select:focus{border-color:var(--teal);}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+  .modal-note{font-size:11px;color:var(--slate);margin-top:8px;line-height:1.5;}
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy2);border:1px solid var(--navy3);color:var(--white);padding:10px 18px;border-radius:7px;font-size:13px;opacity:0;transition:all .2s;pointer-events:none;z-index:300;white-space:nowrap;}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .status-active{color:var(--green);}.status-inactive{color:var(--slate);}.status-noaccount{color:var(--amber);}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-brand"><span class="badge">BoB</span><h1>Client Transfer Tool</h1></div>
+  <div class="header-actions" id="headerActions"></div>
+</header>
+
+<div id="uploadScreen">
+  <div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+      <div class="upload-card" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 12V3m0 0L8 7m4-4l4 4"/></svg>
+        <h2>Upload Client Table</h2>
+        <p>Drag &amp; drop or click to browse</p>
+        <span class="file-hint">Client_Table.csv</span>
+      </div>
+      <span id="clientFileStatus" style="font-size:12px;color:var(--slate)">Not loaded</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+      <div class="upload-card" id="dropZoneEmp" onclick="document.getElementById('fileInputEmp').click()">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        <h2>Upload Employee Table</h2>
+        <p>Drag &amp; drop or click to browse</p>
+        <span class="file-hint">Employee_Table.csv</span>
+      </div>
+      <span id="empFileStatus" style="font-size:12px;color:var(--slate)">Not loaded</span>
+    </div>
+  </div>
+  <input type="file" id="fileInput" accept=".csv" onchange="handleClientFile(event)">
+  <input type="file" id="fileInputEmp" accept=".csv" onchange="handleEmpFile(event)">
+  <p style="font-size:12px;color:var(--slate);text-align:center">
+    Client columns: PARENT_ID, CHILD_ID, PARENT_NAME, STATUS, OFFICER_NAME, OFFICER_CODE, ROLE, MARKET, BRANCH, ANNUAL_SALES_SIZE, CREDIT_EXPOSURE<br>
+    Employee columns: OFFICER_CODE, OFFICER_NAME, ROLE, MARKET, BRANCH
+  </p>
+</div>
+
+<div id="appScreen">
+  <div class="app-body">
+    <div class="main-panel">
+      <div class="filters-bar">
+        <div class="filter-group"><label>Officer</label><select id="filterOfficer" onchange="applyFilters()"><option value="">All Officers</option></select></div>
+        <div class="filter-group"><label>Role</label><select id="filterRole" onchange="applyFilters()"><option value="">All Roles</option><option>BM</option><option>VRM</option><option>BBRM</option></select></div>
+        <div class="filter-group"><label>Market</label><select id="filterMarket" onchange="applyFilters()"><option value="">All Markets</option></select></div>
+        <div class="filter-group"><label>Branch</label><select id="filterBranch" onchange="applyFilters()"><option value="">All Branches</option></select></div>
+        <div class="filter-group"><label>Status</label><select id="filterStatus" onchange="applyFilters()"><option value="">All Statuses</option><option>Active</option><option>Inactive</option><option>No Account</option></select></div>
+        <div class="filter-group"><label>Search</label><input type="text" id="searchInput" placeholder="Name or ID…" oninput="applyFilters()"></div>
+        <div class="filter-actions"><button class="btn btn-secondary btn-sm" onclick="resetFilters()">Reset</button></div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="label">Total Parents</div><div class="value" id="statTotal">0</div></div>
+        <div class="stat-card"><div class="label">Filtered</div><div class="value" id="statFiltered">0</div></div>
+        <div class="stat-card orange"><div class="label">Selected</div><div class="value" id="statSelected">0</div></div>
+        <div class="stat-card green"><div class="label">Assigned</div><div class="value" id="statAssigned">0</div></div>
+        <div class="stat-card" id="statMismatchCard" style="border-color:rgba(245,158,11,.35);cursor:pointer" onclick="filterMismatches()" title="Click to filter role mismatches">
+          <div class="label" style="color:var(--amber)">Role Mismatches</div>
+          <div class="value" style="color:var(--amber)" id="statMismatch">0</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header-row"><h2>Client Book of Business</h2><span class="count" id="tableCount"></span></div>
+        <div class="select-all-bar">
+          <input type="checkbox" id="selectAllChk" onchange="toggleSelectAll(this.checked)">
+          <label for="selectAllChk" id="selectAllLabel" style="cursor:pointer">Select all on page</label>
+          <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openBulkModal()">Bulk Assign</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th style="width:32px"></th>
+              <th onclick="sortBy('PARENT_ID')">Parent ID <span class="sort-icon" id="sort-PARENT_ID">↕</span></th>
+              <th onclick="sortBy('PARENT_NAME')">Client Name <span class="sort-icon" id="sort-PARENT_NAME">↕</span></th>
+              <th onclick="sortBy('STATUS')">Status <span class="sort-icon" id="sort-STATUS">↕</span></th>
+              <th onclick="sortBy('OFFICER_NAME')">Current Officer <span class="sort-icon" id="sort-OFFICER_NAME">↕</span></th>
+              <th onclick="sortBy('ROLE')">Role <span class="sort-icon" id="sort-ROLE">↕</span></th>
+              <th onclick="sortBy('BRANCH')">Branch <span class="sort-icon" id="sort-BRANCH">↕</span></th>
+              <th onclick="sortBy('ANNUAL_SALES_SIZE')">Sales Size <span class="sort-icon" id="sort-ANNUAL_SALES_SIZE">↕</span></th>
+              <th onclick="sortBy('CREDIT_EXPOSURE')">Credit Exp. <span class="sort-icon" id="sort-CREDIT_EXPOSURE">↕</span></th>
+              <th style="min-width:200px">Assign New Officer</th>
+            </tr></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+        <div class="pagination"><span id="pageInfo"></span><div class="pagination-btns" id="pageBtns"></div></div>
+      </div>
+    </div>
+    <div class="side-panel">
+      <div class="side-header"><h3>Pending Transfers</h3><span class="pending-count" id="pendingCount">0</span></div>
+      <div class="side-actions">
+        <button class="btn btn-export btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
+        <button class="btn btn-danger btn-sm" onclick="clearAllAssignments()">✕ Clear All</button>
+      </div>
+      <div id="pendingList">
+        <div class="empty-state">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 7h12M8 12h12M8 17h12M3 7h.01M3 12h.01M3 17h.01"/></svg>
+          <p>No transfers pending.<br>Assign a new officer to a client to see a summary here.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="bulkModal">
+  <div class="modal">
+    <h3>Bulk Assign Officer</h3>
+    <p id="bulkSelCount"></p>
+    <select id="bulkOfficerSelect"></select>
+    <p class="modal-note" id="bulkNote"></p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeBulkModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="applyBulkAssign()">Apply</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ============================================================
+// DATA LAYER — swap processData() call to use GCP in future
+// ============================================================
+let RAW_DATA = [];
+let EMPLOYEE_TABLE = [];
+let CHILD_MAP = {};
+let OFFICERS = [];
+let filteredData = [];
+let assignments = {};
+let selectedRows = new Set();
+let sortCol = '';
+let sortDir = 1;
+let currentPage = 1;
+const PAGE_SIZE = 50;
+
+// FILE UPLOAD — Client Table
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); const f=e.dataTransfer.files[0]; if(f) readCSV(f,'client'); });
+function handleClientFile(e){ const f=e.target.files[0]; if(f) readCSV(f,'client'); }
+
+// FILE UPLOAD — Employee Table
+const dropZoneEmp = document.getElementById('dropZoneEmp');
+dropZoneEmp.addEventListener('dragover', e => { e.preventDefault(); dropZoneEmp.classList.add('drag-over'); });
+dropZoneEmp.addEventListener('dragleave', () => dropZoneEmp.classList.remove('drag-over'));
+dropZoneEmp.addEventListener('drop', e => { e.preventDefault(); dropZoneEmp.classList.remove('drag-over'); const f=e.dataTransfer.files[0]; if(f) readCSV(f,'employee'); });
+function handleEmpFile(e){ const f=e.target.files[0]; if(f) readCSV(f,'employee'); }
+
+let _pendingClient = null;
+let _pendingEmployee = null;
+
+function readCSV(file, type){
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.split('\n').map(l=>l.trim()).filter(Boolean);
+    const headers = lines[0].split(',').map(h=>h.replace(/^"|"$/g,'').trim());
+    const rows = [];
+    for(let i=1;i<lines.length;i++){
+      const vals = splitCSVLine(lines[i]);
+      if(vals.length < headers.length-1) continue;
+      const obj = {};
+      headers.forEach((h,idx)=>{ obj[h]=(vals[idx]||'').replace(/^"|"$/g,'').trim(); });
+      rows.push(obj);
+    }
+    if(type==='client'){
+      if(!rows.length||!rows[0].PARENT_ID){ alert('Client CSV not recognized. Expected PARENT_ID, CHILD_ID, etc.'); return; }
+      _pendingClient=rows;
+      document.getElementById('clientFileStatus').textContent=`✓ ${file.name} (${rows.length} rows)`;
+      document.getElementById('clientFileStatus').style.color='var(--green)';
+      document.getElementById('dropZone').style.borderColor='var(--teal)';
+    } else {
+      if(!rows.length||!rows[0].OFFICER_CODE){ alert('Employee CSV not recognized. Expected OFFICER_CODE, OFFICER_NAME, ROLE, MARKET, BRANCH.'); return; }
+      _pendingEmployee=rows;
+      document.getElementById('empFileStatus').textContent=`✓ ${file.name} (${rows.length} rows)`;
+      document.getElementById('empFileStatus').style.color='var(--green)';
+      document.getElementById('dropZoneEmp').style.borderColor='var(--teal)';
+    }
+    if(_pendingClient&&_pendingEmployee) processData(_pendingClient, _pendingEmployee);
+  };
+  reader.readAsText(file);
+}
+
+function splitCSVLine(line){
+  const res=[]; let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){inQ=!inQ;}else if(c===','&&!inQ){res.push(cur);cur='';}else{cur+=c;}
+  }
+  res.push(cur); return res;
+}
+
+// DATA PROCESSING — entry point (replace this with GCP fetch later)
+function processData(clientRows, employeeRows){
+  CHILD_MAP={};
+  clientRows.forEach(r=>{ if(!CHILD_MAP[r.PARENT_ID]) CHILD_MAP[r.PARENT_ID]=[]; CHILD_MAP[r.PARENT_ID].push(r); });
+  RAW_DATA = Object.entries(CHILD_MAP).map(([pid,children])=>{
+    const parentRow = children.find(r=>r.PARENT_ID===r.CHILD_ID)||children[0];
+    const sales=parseDollar(parentRow.ANNUAL_SALES_SIZE), credit=parseDollar(parentRow.CREDIT_EXPOSURE);
+    let recRole='NONE';
+    if(sales>3000000||credit>1000000) recRole='BBRM';
+    else if((sales>=1000000&&sales<=3000000)||(credit>=100000&&credit<=1000000)) recRole='VRM';
+    else if(sales<1000000&&credit<100000) recRole='BM';
+    const mismatch = parentRow.ROLE && recRole!=='NONE' && parentRow.ROLE!==recRole;
+    return { ...parentRow, _childCount:children.length, _salesNum:sales, _creditNum:credit, _recRole:recRole, _mismatch:mismatch };
+  });
+  // Build officer list from the dedicated Employee Table (v2 approach)
+  OFFICERS = employeeRows.map(e=>({
+    code: e.OFFICER_CODE,
+    name: e.OFFICER_NAME,
+    role: e.ROLE,
+    market: e.MARKET,
+    branch: e.BRANCH,
+  })).sort((a,b)=>a.name.localeCompare(b.name));
+  populateFilters();
+  document.getElementById('uploadScreen').style.display='none';
+  document.getElementById('appScreen').style.display='block';
+  document.getElementById('headerActions').innerHTML=`
+    <span style="font-size:12px;color:var(--slate);margin-right:4px">${RAW_DATA.length.toLocaleString()} parents · ${clientRows.length.toLocaleString()} children · ${OFFICERS.length} officers</span>
+    <button class="btn btn-upload btn-sm" onclick="resetApp()">⬆ Load New Files</button>`;
+  filteredData=[...RAW_DATA];
+  renderStats(); renderTable(); renderSidePanel();
+}
+
+function parseDollar(s){ if(!s) return 0; return parseFloat(s.replace(/[$,\s]/g,''))||0; }
+
+// ELIGIBILITY — officer must match the client's recommended role and same market
+function getEligibleOfficers(row){
+  if(row._recRole==='NONE') return [];
+  return OFFICERS.filter(o=>
+    o.code!==row.OFFICER_CODE &&
+    o.role===row._recRole &&
+    o.market===row.MARKET
+  );
+}
+
+// FILTERS
+function populateFilters(){
+  const officers=[...new Set(RAW_DATA.map(r=>r.OFFICER_NAME))].sort();
+  const markets=[...new Set(RAW_DATA.map(r=>r.MARKET))].sort();
+  const branches=[...new Set(RAW_DATA.map(r=>r.BRANCH))].sort();
+  const fill=(id,vals)=>{ const s=document.getElementById(id),f=s.options[0]; s.innerHTML=''; s.add(f); vals.forEach(v=>s.add(new Option(v,v))); };
+  fill('filterOfficer',officers); fill('filterMarket',markets); fill('filterBranch',branches);
+}
+
+function applyFilters(){
+  const officer=document.getElementById('filterOfficer').value;
+  const role=document.getElementById('filterRole').value;
+  const market=document.getElementById('filterMarket').value;
+  const branch=document.getElementById('filterBranch').value;
+  const status=document.getElementById('filterStatus').value;
+  const search=document.getElementById('searchInput').value.toLowerCase();
+  filteredData=RAW_DATA.filter(r=>{
+    if(officer&&r.OFFICER_NAME!==officer) return false;
+    if(role&&r.ROLE!==role) return false;
+    if(market&&r.MARKET!==market) return false;
+    if(branch&&r.BRANCH!==branch) return false;
+    if(status&&r.STATUS!==status) return false;
+    if(search&&!(r.PARENT_NAME+r.PARENT_ID+r.OFFICER_NAME).toLowerCase().includes(search)) return false;
+    return true;
+  });
+  if(sortCol) applySort(false);
+  currentPage=1; renderStats(); renderTable();
+}
+
+function resetFilters(){
+  ['filterOfficer','filterRole','filterMarket','filterBranch','filterStatus'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('searchInput').value='';
+  applyFilters();
+}
+
+function filterMismatches(){
+  filteredData=RAW_DATA.filter(r=>r._mismatch);
+  currentPage=1; renderStats(); renderTable();
+}
+
+// SORT
+function sortBy(col){
+  if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDir=1;}
+  document.querySelectorAll('.sort-icon').forEach(el=>el.textContent='↕');
+  const icon=document.getElementById('sort-'+col); if(icon) icon.textContent=sortDir===1?'↑':'↓';
+  applySort(true);
+}
+function applySort(rerender){
+  filteredData.sort((a,b)=>{
+    let av=a[sortCol],bv=b[sortCol];
+    if(['ANNUAL_SALES_SIZE','CREDIT_EXPOSURE','DEPOSIT_BALANCE'].includes(sortCol)){av=parseDollar(av);bv=parseDollar(bv);}
+    else{av=(av||'').toString().toLowerCase();bv=(bv||'').toString().toLowerCase();}
+    return av<bv?-sortDir:av>bv?sortDir:0;
+  });
+  if(rerender){currentPage=1;renderTable();}
+}
+
+// RENDER
+function renderStats(){
+  document.getElementById('statTotal').textContent=RAW_DATA.length.toLocaleString();
+  document.getElementById('statFiltered').textContent=filteredData.length.toLocaleString();
+  document.getElementById('statSelected').textContent=selectedRows.size;
+  document.getElementById('statAssigned').textContent=Object.keys(assignments).length;
+  const mismatches=filteredData.filter(r=>r._mismatch).length;
+  document.getElementById('statMismatch').textContent=mismatches.toLocaleString();
+}
+
+function renderTable(){
+  const totalPages=Math.max(1,Math.ceil(filteredData.length/PAGE_SIZE));
+  if(currentPage>totalPages) currentPage=totalPages;
+  const start=(currentPage-1)*PAGE_SIZE;
+  const page=filteredData.slice(start,start+PAGE_SIZE);
+  document.getElementById('tableCount').textContent=`${filteredData.length.toLocaleString()} clients`;
+  document.getElementById('selectAllLabel').textContent=`${selectedRows.size} selected of ${filteredData.length.toLocaleString()}`;
+  const tbody=document.getElementById('tableBody');
+  tbody.innerHTML=page.map(row=>{
+    const pid=row.PARENT_ID,asgn=assignments[pid],isSelected=selectedRows.has(pid);
+    const sc=row.STATUS==='Active'?'status-active':row.STATUS==='Inactive'?'status-inactive':'status-noaccount';
+    const eligible=getEligibleOfficers(row);
+    const opts=[`<option value="">— Assign Officer —</option>`];
+    eligible.forEach(o=>{ const sel=asgn&&asgn.code===o.code?'selected':''; opts.push(`<option value="${o.code}" ${sel}>${o.name} (${o.role})</option>`); });
+    if(!eligible.length) opts.push(`<option disabled>No eligible officers</option>`);
+    const rowClass=isSelected?'selected':asgn?'assigned':'';
+    const ac=asgn?'assigned':'';
+    return `<tr class="${rowClass}" data-id="${pid}">
+      <td><input type="checkbox" ${isSelected?'checked':''} onchange="toggleRow('${pid}',this.checked)"></td>
+      <td class="mono">${pid}${row._childCount>1?`<span class="child-badge">+${row._childCount-1}</span>`:''}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis" title="${row.PARENT_NAME}">${row.PARENT_NAME}</td>
+      <td class="${sc}">${row.STATUS}</td>
+      <td>${row.OFFICER_NAME}</td>
+      <td><span class="role-badge role-${row.ROLE}">${row.ROLE}</span></td>
+      <td>${row.BRANCH}</td>
+      <td class="mono">${row.ANNUAL_SALES_SIZE||'$0'}</td>
+      <td class="mono">${row.CREDIT_EXPOSURE||'$0'}</td>
+      <td><div class="assignment-cell">
+        <select class="${ac}" onchange="assignOfficer('${pid}',this)">${opts.join('')}</select>
+        ${asgn?`<span class="check-icon">✓</span><span class="clear-btn" onclick="clearAssignment('${pid}')">✕</span>`:''}
+      </div></td>
+    </tr>`;
+  }).join('');
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages){
+  document.getElementById('pageInfo').textContent=`Page ${currentPage} of ${totalPages}`;
+  const btns=document.getElementById('pageBtns');
+  const pages=[];
+  pages.push(`<button class="page-btn" ${currentPage===1?'disabled':''} onclick="goPage(${currentPage-1})">‹</button>`);
+  const range=[];
+  for(let p=1;p<=totalPages;p++) if(p===1||p===totalPages||Math.abs(p-currentPage)<=2) range.push(p);
+  let last=0;
+  range.forEach(p=>{ if(last&&p-last>1) pages.push(`<span style="color:var(--slate);padding:0 4px">…</span>`); pages.push(`<button class="page-btn ${p===currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`); last=p; });
+  pages.push(`<button class="page-btn" ${currentPage===totalPages?'disabled':''} onclick="goPage(${currentPage+1})">›</button>`);
+  btns.innerHTML=pages.join('');
+}
+function goPage(p){currentPage=p;renderTable();}
+
+// ASSIGNMENT
+function assignOfficer(pid,sel){ const code=sel.value; if(!code){clearAssignment(pid);return;} const name=sel.selectedOptions[0].text.replace(/\s+\(\w+\)$/,''); assignments[pid]={code,name}; renderStats();renderTable();renderSidePanel(); }
+function clearAssignment(pid){ delete assignments[pid]; renderStats();renderTable();renderSidePanel(); }
+function clearAllAssignments(){ if(!Object.keys(assignments).length) return; if(!confirm('Clear all pending assignments?')) return; assignments={}; renderStats();renderTable();renderSidePanel(); }
+
+// SELECTION
+function toggleRow(pid,checked){ if(checked) selectedRows.add(pid); else selectedRows.delete(pid); document.getElementById('statSelected').textContent=selectedRows.size; document.getElementById('selectAllLabel').textContent=`${selectedRows.size} selected of ${filteredData.length.toLocaleString()}`; }
+function toggleSelectAll(checked){ if(checked) filteredData.forEach(r=>selectedRows.add(r.PARENT_ID)); else filteredData.forEach(r=>selectedRows.delete(r.PARENT_ID)); renderStats();renderTable(); }
+
+// BULK ASSIGN
+function openBulkModal(){
+  if(!selectedRows.size){showToast('Select clients first');return;}
+  const sel=[...selectedRows].map(id=>RAW_DATA.find(r=>r.PARENT_ID===id)).filter(Boolean);
+  const commonEligible={};
+  sel.forEach(r=>getEligibleOfficers(r).forEach(o=>{ if(!commonEligible[o.code]) commonEligible[o.code]={...o,count:0}; commonEligible[o.code].count++; }));
+  const allEligible=Object.values(commonEligible).filter(o=>o.count===sel.length);
+  const bs=document.getElementById('bulkOfficerSelect');
+  bs.innerHTML='<option value="">-- Select Officer --</option>';
+  allEligible.forEach(o=>bs.add(new Option(`${o.name} (${o.role})`,o.code)));
+  document.getElementById('bulkSelCount').textContent=`${selectedRows.size} client(s) selected`;
+  document.getElementById('bulkNote').textContent=allEligible.length>0?'Officers shown are eligible for ALL selected clients based on sales size and credit exposure rules.':'⚠ No single officer is eligible for all selected clients. Deselect incompatible clients.';
+  document.getElementById('bulkModal').style.display='flex';
+}
+function closeBulkModal(){document.getElementById('bulkModal').style.display='none';}
+function applyBulkAssign(){
+  const code=document.getElementById('bulkOfficerSelect').value;
+  if(!code){showToast('Select an officer first');return;}
+  const name=document.getElementById('bulkOfficerSelect').selectedOptions[0].text.replace(/\s+\(\w+\)$/,'');
+  selectedRows.forEach(id=>{assignments[id]={code,name};});
+  closeBulkModal(); selectedRows.clear();
+  renderStats();renderTable();renderSidePanel();
+  showToast(`Assigned ${Object.keys(assignments).length} clients`);
+}
+
+// SIDE PANEL
+function renderSidePanel(){
+  const count=Object.keys(assignments).length;
+  document.getElementById('pendingCount').textContent=count;
+  if(!count){document.getElementById('pendingList').innerHTML=`<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 7h12M8 12h12M8 17h12M3 7h.01M3 12h.01M3 17h.01"/></svg><p>No transfers pending.<br>Assign a new officer to see a summary here.</p></div>`;return;}
+  const curStats={};
+  RAW_DATA.forEach(r=>{ if(!curStats[r.OFFICER_CODE]) curStats[r.OFFICER_CODE]={name:r.OFFICER_NAME,code:r.OFFICER_CODE,role:r.ROLE,startCount:0,subtractions:0,additionsByNew:{}}; curStats[r.OFFICER_CODE].startCount++; });
+  const newAdd={};
+  Object.entries(assignments).forEach(([pid,asgn])=>{
+    const row=RAW_DATA.find(r=>r.PARENT_ID===pid); if(!row) return;
+    if(curStats[row.OFFICER_CODE]){curStats[row.OFFICER_CODE].subtractions++; if(!curStats[row.OFFICER_CODE].additionsByNew[asgn.code]) curStats[row.OFFICER_CODE].additionsByNew[asgn.code]={name:asgn.name,count:0}; curStats[row.OFFICER_CODE].additionsByNew[asgn.code].count++;}
+    if(!newAdd[asgn.code]) newAdd[asgn.code]={name:asgn.name,additions:0}; newAdd[asgn.code].additions++;
+  });
+  const affected=new Set([...Object.values(curStats).filter(o=>o.subtractions>0).map(o=>o.code),...Object.keys(newAdd)]);
+  let html='';
+  affected.forEach(code=>{
+    const o=curStats[code]; if(!o) return;
+    const addRec=newAdd[code]?newAdd[code].additions:0;
+    const ending=o.startCount-o.subtractions+addRec;
+    const tOut=Object.entries(o.additionsByNew).map(([nc,info])=>`<div class="summary-row"><span class="officer-name">→ ${info.name}</span><span></span><span class="subtractions">-${info.count}</span><span></span></div>`).join('');
+    html+=`<div class="pending-officer"><div class="pending-officer-header"><span>${o.name} <span class="role-badge role-${o.role}" style="font-size:9px">${o.role}</span></span><span class="arrow-label">${o.subtractions>0?`Sending ${o.subtractions}`:''}${addRec>0?` · Receiving ${addRec}`:''}</span></div><div class="pending-summary"><div class="summary-header"><span>Name</span><span>Add.</span><span>Sub.</span><span>Ending</span></div><div class="summary-row"><span class="officer-name">${o.name}</span><span class="additions">${addRec>0?'+'+addRec:''}</span><span class="subtractions">${o.subtractions>0?'-'+o.subtractions:''}</span><span class="ending">${ending}</span></div>${tOut}</div></div>`;
+  });
+  document.getElementById('pendingList').innerHTML=html;
+}
+
+// EXPORT — one row per CHILD_ID; columns match original export format
+function exportCSV(){
+  if(!Object.keys(assignments).length){showToast('No assignments to export');return;}
+  const rows=[['client_id','Current_Officer_Name','Current_Officer_Code','New_Officer_Name','New_Officer_Code']];
+  Object.entries(assignments).forEach(([pid,asgn])=>{
+    const children=CHILD_MAP[pid]||[];
+    children.forEach(child=>{
+      rows.push([child.CHILD_ID, child.OFFICER_NAME, child.OFFICER_CODE, asgn.name, asgn.code]);
+    });
+  });
+  const csv=rows.map(r=>r.map(c=>`"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='BoB_Transfers.csv'; a.click();
+  URL.revokeObjectURL(url);
+  const childCount=Object.entries(assignments).reduce((s,[pid])=>s+(CHILD_MAP[pid]||[]).length,0);
+  showToast(`Exported ${Object.keys(assignments).length} parents · ${childCount} child rows`);
+}
+
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+
+function resetApp(){
+  RAW_DATA=[];CHILD_MAP={};OFFICERS=[];filteredData=[];assignments={};selectedRows.clear();sortCol='';sortDir=1;currentPage=1;
+  _pendingClient=null;_pendingEmployee=null;
+  document.getElementById('appScreen').style.display='none';
+  document.getElementById('uploadScreen').style.display='flex';
+  document.getElementById('headerActions').innerHTML='';
+  document.getElementById('fileInput').value='';
+  document.getElementById('fileInputEmp').value='';
+  document.getElementById('clientFileStatus').textContent='Not loaded';
+  document.getElementById('clientFileStatus').style.color='var(--slate)';
+  document.getElementById('empFileStatus').textContent='Not loaded';
+  document.getElementById('empFileStatus').style.color='var(--slate)';
+  document.getElementById('dropZone').style.borderColor='';
+  document.getElementById('dropZoneEmp').style.borderColor='';
+}
+</script>
+</body>
+</html>
