@@ -333,7 +333,9 @@ function processData(clientRows, employeeRows){
     <span style="font-size:12px;color:var(--slate);margin-right:4px">${RAW_DATA.length.toLocaleString()} parents · ${clientRows.length.toLocaleString()} children · ${OFFICERS.length} officers</span>
     <button class="btn btn-upload btn-sm" onclick="resetApp()">⬆ Load New Files</button>`;
   filteredData=[...RAW_DATA];
-  renderStats(); renderTable(); renderSidePanel();
+  readFiltersFromURL();
+  applyFilters();
+  renderSidePanel();
 }
 
 function parseDollar(s){ if(!s) return 0; return parseFloat(s.replace(/[$,\s]/g,''))||0; }
@@ -358,6 +360,55 @@ function populateFilters(){
   fill('filterOfficer',officers); fill('filterMarket',markets); fill('filterBranch',branches);
 }
 
+function pushFiltersToURL() {
+  const params = new URLSearchParams();
+  const officer = document.getElementById('filterOfficer').value;
+  const role    = document.getElementById('filterRole').value;
+  const recRole = document.getElementById('filterRecRole').value; // remove if you haven't added this filter yet
+  const market  = document.getElementById('filterMarket').value;
+  const branch  = document.getElementById('filterBranch').value;
+  const status  = document.getElementById('filterStatus').value;
+  const search  = document.getElementById('searchInput').value;
+  const page    = currentPage;
+
+  if (officer) params.set('officer', officer);
+  if (role)    params.set('role', role);
+  if (recRole) params.set('recRole', recRole); // remove if not using
+  if (market)  params.set('market', market);
+  if (branch)  params.set('branch', branch);
+  if (status)  params.set('status', status);
+  if (search)  params.set('search', search);
+  if (page > 1) params.set('page', page);
+
+  const newURL = params.toString()
+    ? `${location.pathname}?${params.toString()}`
+    : location.pathname;
+  history.replaceState(null, '', newURL);
+}
+
+function readFiltersFromURL() {
+  const params = new URLSearchParams(location.search);
+
+  const set = (id, key) => {
+    const val = params.get(key);
+    const el = document.getElementById(id);
+    if (val && el) el.value = val;
+  };
+
+  set('filterOfficer', 'officer');
+  set('filterRole',    'role');
+  set('filterRecRole', 'recRole'); // remove if not using
+  set('filterMarket',  'market');
+  set('filterBranch',  'branch');
+  set('filterStatus',  'status');
+
+  const search = params.get('search');
+  if (search) document.getElementById('searchInput').value = search;
+
+  const page = parseInt(params.get('page'));
+  if (page > 1) currentPage = page;
+}
+
 function applyFilters(){
   const officer=document.getElementById('filterOfficer').value;
   const role=document.getElementById('filterRole').value;
@@ -378,6 +429,7 @@ function applyFilters(){
   });
   if(sortCol) applySort(false);
   currentPage=1; renderStats(); renderTable();
+  pushFiltersToURL();
 }
 
 function resetFilters(){
@@ -391,6 +443,8 @@ function filterMismatches(){
   filteredData=RAW_DATA.filter(r=>r._mismatch);
   currentPage=1; renderStats(); renderTable();
 }
+
+
 
 // SORT
 function sortBy(col){
@@ -468,7 +522,7 @@ function renderPagination(totalPages){
   pages.push(`<button class="page-btn" ${currentPage===totalPages?'disabled':''} onclick="goPage(${currentPage+1})">›</button>`);
   btns.innerHTML=pages.join('');
 }
-function goPage(p){currentPage=p;renderTable();}
+function goPage(p){currentPage=p;renderTable();pushFiltersToURL();}
 
 // ASSIGNMENT
 function assignOfficer(pid,sel){
@@ -596,6 +650,7 @@ document.addEventListener('keydown', e => {
 });
 
 function resetApp(){
+  history.replaceState(null, '', location.pathname);
   RAW_DATA=[];CHILD_MAP={};OFFICERS=[];filteredData=[];assignments={};selectedRows.clear();sortCol='';sortDir=1;currentPage=1;
   _pendingClient=null;_pendingEmployee=null;
   document.getElementById('appScreen').style.display='none';
