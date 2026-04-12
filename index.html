@@ -233,6 +233,7 @@ let assignments = {};
 let undoStack = [];   // past states
 let redoStack = [];   // future states (after undos)
 const MAX_HISTORY = 50;
+let currentSessionKey = null;
 
 function snapshotAssignments() {
   undoStack.push(JSON.stringify(assignments));
@@ -245,6 +246,12 @@ let sortCol = '';
 let sortDir = 1;
 let currentPage = 1;
 const PAGE_SIZE = 50;
+
+function makeSessionKey(clientRows, employeeRows) {
+  // Uses client filename row count + employee row count as a lightweight fingerprint.
+  // Good enough to detect a different file being loaded.
+  return `BoB_${clientRows.length}_${clientRows[0].PARENT_ID}_${clientRows[clientRows.length-1].PARENT_ID}`;
+}
 
 // FILE UPLOAD — Client Table
 const dropZone = document.getElementById('dropZone');
@@ -333,6 +340,8 @@ function processData(clientRows, employeeRows){
     <span style="font-size:12px;color:var(--slate);margin-right:4px">${RAW_DATA.length.toLocaleString()} parents · ${clientRows.length.toLocaleString()} children · ${OFFICERS.length} officers</span>
     <button class="btn btn-upload btn-sm" onclick="resetApp()">⬆ Load New Files</button>`;
   filteredData=[...RAW_DATA];
+  currentSessionKey = makeSessionKey(clientRows, employeeRows);
+  loadAssignments();
   readFiltersFromURL();
   applyFilters();
   renderSidePanel();
@@ -530,20 +539,48 @@ function assignOfficer(pid,sel){
    if(!code){clearAssignment(pid);return;} 
    const name=sel.selectedOptions[0].text.replace(/\s+\(\w+\)$/,'');
    snapshotAssignments(); 
-   assignments[pid]={code,name}; 
+   assignments[pid]={code,name};
+   saveAssignments(); 
    renderStats();renderTable();renderSidePanel(); 
 }
+
 function clearAssignment(pid) { 
   snapshotAssignments();
-  delete assignments[pid]; 
+  delete assignments[pid];
+  saveAssignments(); 
   renderStats();renderTable();renderSidePanel(); 
 }
+
 function clearAllAssignments() { 
   if(!Object.keys(assignments).length) return; 
   if(!confirm('Clear all pending assignments?')) return;
   snapshotAssignments(); 
-  assignments={}; 
-  renderStats();renderTable();renderSidePanel(); }
+  assignments={};
+  saveAssignments(); 
+  renderStats();renderTable();renderSidePanel(); 
+}
+
+function saveAssignments() {
+  if (!currentSessionKey) return;
+  localStorage.setItem(currentSessionKey, JSON.stringify(assignments));
+}
+
+function loadAssignments() {
+  if (!currentSessionKey) return;
+  try {
+    const saved = localStorage.getItem(currentSessionKey);
+    if (!saved) return;
+    const parsed = JSON.parse(saved);
+    // Only restore if it's a non-empty object
+    if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+      assignments = parsed;
+      showToast(`Restored ${Object.keys(assignments).length} saved assignment(s)`);
+    }
+  } catch(e) {
+    // Corrupted data — silently discard it
+    localStorage.removeItem(currentSessionKey);
+  }
+}
 
 // SELECTION
 function toggleRow(pid,checked){ if(checked) selectedRows.add(pid); else selectedRows.delete(pid); document.getElementById('statSelected').textContent=selectedRows.size; document.getElementById('selectAllLabel').textContent=`${selectedRows.size} selected of ${filteredData.length.toLocaleString()}`; }
@@ -570,6 +607,7 @@ function applyBulkAssign(){
   const name=document.getElementById('bulkOfficerSelect').selectedOptions[0].text.replace(/\s+\(\w+\)$/,'');
   snapshotAssignments();
   selectedRows.forEach(id=>{assignments[id]={code,name};});
+  saveAssignments();
   closeBulkModal(); selectedRows.clear();
   renderStats();renderTable();renderSidePanel();
   showToast(`Assigned ${Object.keys(assignments).length} clients`);
@@ -580,6 +618,7 @@ function undoAssignment() {
   if (!undoStack.length) { showToast('Nothing to undo'); return; }
   redoStack.push(JSON.stringify(assignments));
   assignments = JSON.parse(undoStack.pop());
+  saveAssignments();
   renderStats(); renderTable(); renderSidePanel();
   showToast('Undone');
 }
@@ -588,6 +627,7 @@ function redoAssignment() {
   if (!redoStack.length) { showToast('Nothing to redo'); return; }
   undoStack.push(JSON.stringify(assignments));
   assignments = JSON.parse(redoStack.pop());
+  saveAssignments();
   renderStats(); renderTable(); renderSidePanel();
   showToast('Redone');
 }
@@ -651,6 +691,8 @@ document.addEventListener('keydown', e => {
 
 function resetApp(){
   history.replaceState(null, '', location.pathname);
+  if (currentSessionKey) localStorage.removeItem(currentSessionKey); // ← ADD THIS
+  currentSessionKey = null;
   RAW_DATA=[];CHILD_MAP={};OFFICERS=[];filteredData=[];assignments={};selectedRows.clear();sortCol='';sortDir=1;currentPage=1;
   _pendingClient=null;_pendingEmployee=null;
   document.getElementById('appScreen').style.display='none';
