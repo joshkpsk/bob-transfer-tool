@@ -146,6 +146,7 @@
         <div class="filter-group"><label>Officer</label><select id="filterOfficer" onchange="applyFilters()"><option value="">All Officers</option></select></div>
         <div class="filter-group"><label>Role</label><select id="filterRole" onchange="applyFilters()"><option value="">All Roles</option><option>BM</option><option>VRM</option><option>BBRM</option></select></div>
         <div class="filter-group"><label>Market</label><select id="filterMarket" onchange="applyFilters()"><option value="">All Markets</option></select></div>
+        <div class="filter-group"><label>Rec. Role</label><select id="filterRecRole" onchange="applyFilters()"><option value="">All Rec. Roles</option><option>BM</option><option>VRM</option><option>BBRM</option><option value="NONE">No Rec.</option></select></div>
         <div class="filter-group"><label>Branch</label><select id="filterBranch" onchange="applyFilters()"><option value="">All Branches</option></select></div>
         <div class="filter-group"><label>Status</label><select id="filterStatus" onchange="applyFilters()"><option value="">All Statuses</option><option>Active</option><option>Inactive</option><option>No Account</option></select></div>
         <div class="filter-group"><label>Search</label><input type="text" id="searchInput" placeholder="Name or ID…" oninput="applyFilters()"></div>
@@ -229,6 +230,16 @@ let CHILD_MAP = {};
 let OFFICERS = [];
 let filteredData = [];
 let assignments = {};
+let undoStack = [];   // past states
+let redoStack = [];   // future states (after undos)
+const MAX_HISTORY = 50;
+
+function snapshotAssignments() {
+  undoStack.push(JSON.stringify(assignments));
+  if (undoStack.length > MAX_HISTORY) undoStack.shift();
+  redoStack = []; // any new action clears the redo stack
+}
+
 let selectedRows = new Set();
 let sortCol = '';
 let sortDir = 1;
@@ -350,6 +361,7 @@ function populateFilters(){
 function applyFilters(){
   const officer=document.getElementById('filterOfficer').value;
   const role=document.getElementById('filterRole').value;
+  const recRole = document.getElementById('filterRecRole').value;
   const market=document.getElementById('filterMarket').value;
   const branch=document.getElementById('filterBranch').value;
   const status=document.getElementById('filterStatus').value;
@@ -357,6 +369,7 @@ function applyFilters(){
   filteredData=RAW_DATA.filter(r=>{
     if(officer&&r.OFFICER_NAME!==officer) return false;
     if(role&&r.ROLE!==role) return false;
+    if (recRole && r._recRole !== recRole) return false;
     if(market&&r.MARKET!==market) return false;
     if(branch&&r.BRANCH!==branch) return false;
     if(status&&r.STATUS!==status) return false;
@@ -368,12 +381,13 @@ function applyFilters(){
 }
 
 function resetFilters(){
-  ['filterOfficer','filterRole','filterMarket','filterBranch','filterStatus'].forEach(id=>document.getElementById(id).value='');
+  ['filterOfficer','filterRole','filterRecRole','filterMarket','filterBranch','filterStatus'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('searchInput').value='';
   applyFilters();
 }
 
 function filterMismatches(){
+  document.getElementById('filterRecRole').value = '';
   filteredData=RAW_DATA.filter(r=>r._mismatch);
   currentPage=1; renderStats(); renderTable();
 }
@@ -457,9 +471,25 @@ function renderPagination(totalPages){
 function goPage(p){currentPage=p;renderTable();}
 
 // ASSIGNMENT
-function assignOfficer(pid,sel){ const code=sel.value; if(!code){clearAssignment(pid);return;} const name=sel.selectedOptions[0].text.replace(/\s+\(\w+\)$/,''); assignments[pid]={code,name}; renderStats();renderTable();renderSidePanel(); }
-function clearAssignment(pid){ delete assignments[pid]; renderStats();renderTable();renderSidePanel(); }
-function clearAllAssignments(){ if(!Object.keys(assignments).length) return; if(!confirm('Clear all pending assignments?')) return; assignments={}; renderStats();renderTable();renderSidePanel(); }
+function assignOfficer(pid,sel){
+   const code=sel.value; 
+   if(!code){clearAssignment(pid);return;} 
+   const name=sel.selectedOptions[0].text.replace(/\s+\(\w+\)$/,'');
+   snapshotAssignments(); 
+   assignments[pid]={code,name}; 
+   renderStats();renderTable();renderSidePanel(); 
+}
+function clearAssignment(pid) { 
+  snapshotAssignments();
+  delete assignments[pid]; 
+  renderStats();renderTable();renderSidePanel(); 
+}
+function clearAllAssignments() { 
+  if(!Object.keys(assignments).length) return; 
+  if(!confirm('Clear all pending assignments?')) return;
+  snapshotAssignments(); 
+  assignments={}; 
+  renderStats();renderTable();renderSidePanel(); }
 
 // SELECTION
 function toggleRow(pid,checked){ if(checked) selectedRows.add(pid); else selectedRows.delete(pid); document.getElementById('statSelected').textContent=selectedRows.size; document.getElementById('selectAllLabel').textContent=`${selectedRows.size} selected of ${filteredData.length.toLocaleString()}`; }
@@ -484,10 +514,28 @@ function applyBulkAssign(){
   const code=document.getElementById('bulkOfficerSelect').value;
   if(!code){showToast('Select an officer first');return;}
   const name=document.getElementById('bulkOfficerSelect').selectedOptions[0].text.replace(/\s+\(\w+\)$/,'');
+  snapshotAssignments();
   selectedRows.forEach(id=>{assignments[id]={code,name};});
   closeBulkModal(); selectedRows.clear();
   renderStats();renderTable();renderSidePanel();
   showToast(`Assigned ${Object.keys(assignments).length} clients`);
+}
+
+// UNDO/REDO FUNCTIONS
+function undoAssignment() {
+  if (!undoStack.length) { showToast('Nothing to undo'); return; }
+  redoStack.push(JSON.stringify(assignments));
+  assignments = JSON.parse(undoStack.pop());
+  renderStats(); renderTable(); renderSidePanel();
+  showToast('Undone');
+}
+
+function redoAssignment() {
+  if (!redoStack.length) { showToast('Nothing to redo'); return; }
+  undoStack.push(JSON.stringify(assignments));
+  assignments = JSON.parse(redoStack.pop());
+  renderStats(); renderTable(); renderSidePanel();
+  showToast('Redone');
 }
 
 // SIDE PANEL
@@ -535,6 +583,17 @@ function exportCSV(){
 }
 
 function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+    e.preventDefault();
+    undoAssignment();
+  }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+    e.preventDefault();
+    redoAssignment();
+  }
+});
 
 function resetApp(){
   RAW_DATA=[];CHILD_MAP={};OFFICERS=[];filteredData=[];assignments={};selectedRows.clear();sortCol='';sortDir=1;currentPage=1;
