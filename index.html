@@ -362,11 +362,43 @@ function getEligibleOfficers(row){
 
 // FILTERS
 function populateFilters(){
-  const officers=[...new Set(RAW_DATA.map(r=>r.OFFICER_NAME))].sort();
-  const markets=[...new Set(RAW_DATA.map(r=>r.MARKET))].sort();
-  const branches=[...new Set(RAW_DATA.map(r=>r.BRANCH))].sort();
-  const fill=(id,vals)=>{ const s=document.getElementById(id),f=s.options[0]; s.innerHTML=''; s.add(f); vals.forEach(v=>s.add(new Option(v,v))); };
-  fill('filterOfficer',officers); fill('filterMarket',markets); fill('filterBranch',branches);
+  updateFilterOptions();
+}
+
+function updateFilterOptions(){
+  // Read current selections so we can preserve them after rebuilding
+  const selOfficer = document.getElementById('filterOfficer').value;
+  const selRole    = document.getElementById('filterRole').value;
+  const selMarket  = document.getElementById('filterMarket').value;
+  const selBranch  = document.getElementById('filterBranch').value;
+  const selStatus  = document.getElementById('filterStatus').value;
+
+  // Filter RAW_DATA down to rows that match every *currently active* filter
+  // (each dropdown ignores its own filter so it shows what's still possible)
+  function baseRows(ignoreField){
+    return RAW_DATA.filter(r => {
+      if(ignoreField!=='officer' && selOfficer && r.OFFICER_NAME!==selOfficer) return false;
+      if(ignoreField!=='role'    && selRole    && r.ROLE!==selRole)            return false;
+      if(ignoreField!=='market'  && selMarket  && r.MARKET!==selMarket)        return false;
+      if(ignoreField!=='branch'  && selBranch  && r.BRANCH!==selBranch)        return false;
+      if(ignoreField!=='status'  && selStatus  && r.STATUS!==selStatus)        return false;
+      return true;
+    });
+  }
+
+  const fill = (id, vals, currentVal) => {
+    const s = document.getElementById(id);
+    const placeholder = s.options[0]; // keep "All Officers" etc.
+    s.innerHTML = '';
+    s.add(new Option(placeholder.text, ''));
+    vals.forEach(v => s.add(new Option(v, v)));
+    // Restore selection if it still exists in the new list
+    if(currentVal && vals.includes(currentVal)) s.value = currentVal;
+  };
+
+  fill('filterOfficer', [...new Set(baseRows('officer').map(r=>r.OFFICER_NAME))].sort(), selOfficer);
+  fill('filterMarket',  [...new Set(baseRows('market').map(r=>r.MARKET))].sort(),        selMarket);
+  fill('filterBranch',  [...new Set(baseRows('branch').map(r=>r.BRANCH))].sort(),        selBranch);
 }
 
 function pushFiltersToURL() {
@@ -439,11 +471,13 @@ function applyFilters(){
   if(sortCol) applySort(false);
   currentPage=1; renderStats(); renderTable();
   pushFiltersToURL();
+  updateFilterOptions();
 }
 
 function resetFilters(){
   ['filterOfficer','filterRole','filterRecRole','filterMarket','filterBranch','filterStatus'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('searchInput').value='';
+  updateFilterOptions();
   applyFilters();
 }
 
