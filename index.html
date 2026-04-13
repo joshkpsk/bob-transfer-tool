@@ -601,6 +601,7 @@ function openBulkModal(){
   document.getElementById('bulkModal').style.display='flex';
 }
 function closeBulkModal(){document.getElementById('bulkModal').style.display='none';}
+
 function applyBulkAssign(){
   const code=document.getElementById('bulkOfficerSelect').value;
   if(!code){showToast('Select an officer first');return;}
