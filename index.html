@@ -161,6 +161,10 @@
           <div class="label" style="color:var(--amber)">Role Mismatches</div>
           <div class="value" style="color:var(--amber)" id="statMismatch">0</div>
         </div>
+        <div class="stat-card" id="statTerminatedCard" style="border-color:rgba(239,68,68,.35);cursor:pointer" onclick="filterTerminated()" title="Click to filter clients assigned to terminated officers">
+          <div class="label" style="color:#fca5a5">Terminated Officer</div>
+          <div class="value" style="color:#fca5a5" id="statTerminated">0</div>
+        </div>
       </div>
       <div class="table-wrap">
         <div class="table-header-row"><h2>Client Book of Business</h2><span class="count" id="tableCount"></span></div>
@@ -332,6 +336,7 @@ function processData(clientRows, employeeRows){
     role: e.ROLE,
     market: e.MARKET,
     branch: e.BRANCH,
+    empStatus: e.EMP_STATUS
   })).sort((a,b)=>a.name.localeCompare(b.name));
   populateFilters();
   document.getElementById('uploadScreen').style.display='none';
@@ -487,7 +492,11 @@ function filterMismatches(){
   currentPage=1; renderStats(); renderTable();
 }
 
-
+function filterTerminated(){
+  const terminatedCodes=new Set(OFFICERS.filter(o=>o.empStatus==='T').map(o=>o.code));
+  filteredData=RAW_DATA.filter(r=>terminatedCodes.has(r.OFFICER_CODE));
+  currentPage=1; renderStats(); renderTable();
+}
 
 // SORT
 function sortBy(col){
@@ -514,6 +523,9 @@ function renderStats(){
   document.getElementById('statAssigned').textContent=Object.keys(assignments).length;
   const mismatches=filteredData.filter(r=>r._mismatch).length;
   document.getElementById('statMismatch').textContent=mismatches.toLocaleString();
+  const terminatedCodes=new Set(OFFICERS.filter(o=>o.empStatus==='T').map(o=>o.code));
+  const terminated=filteredData.filter(r=>terminatedCodes.has(r.OFFICER_CODE)).length;
+  document.getElementById('statTerminated').textContent=terminated.toLocaleString();
 }
 
 function renderTable(){
