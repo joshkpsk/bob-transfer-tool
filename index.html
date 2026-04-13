@@ -661,11 +661,11 @@ function renderSidePanel(){
 // EXPORT — one row per CHILD_ID; columns match original export format
 function exportCSV(){
   if(!Object.keys(assignments).length){showToast('No assignments to export');return;}
-  const rows=[['client_id','Current_Officer_Name','Current_Officer_Code','New_Officer_Name','New_Officer_Code']];
+  const rows=[['parent_id','client_id','parent_name','Current_Officer_Name','Current_Officer_Code','New_Officer_Name','New_Officer_Code']];
   Object.entries(assignments).forEach(([pid,asgn])=>{
     const children=CHILD_MAP[pid]||[];
     children.forEach(child=>{
-      rows.push([child.CHILD_ID, child.OFFICER_NAME, child.OFFICER_CODE, asgn.name, asgn.code]);
+      rows.push([pid, child.CHILD_ID, child.PARENT_NAME, child.OFFICER_NAME, child.OFFICER_CODE, asgn.name, asgn.code]);
     });
   });
   const csv=rows.map(r=>r.map(c=>`"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
