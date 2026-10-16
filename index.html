@@ -64,7 +64,7 @@
   tbody td{padding:7px 10px;color:var(--slate-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;}
   tbody td.mono{font-family:'IBM Plex Mono',monospace;font-size:11px;}
   .role-badge{display:inline-block;padding:2px 6px;border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;}
-  .role-BM{background:rgba(99,102,241,.2);color:#a5b4fc;}.role-VRM{background:rgba(234,179,8,.2);color:#fde68a;}.role-BBRM{background:rgba(239,68,68,.2);color:#fca5a5;}
+  .role-BM{background:rgba(99,102,241,.2);color:#a5b4fc;}.role-VRM{background:rgba(234,179,8,.2);color:#fde68a;}.role-BBRM{background:rgba(239,68,68,.2);color:#fca5a5;}.role-SBRM{background:rgba(20,184,166,.2);color:#5eead4;}
   .child-badge{display:inline-block;padding:1px 5px;border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:10px;background:rgba(148,163,184,.15);color:var(--slate);margin-left:4px;}
   .assignment-cell{display:flex;align-items:center;gap:6px;}
   .assignment-cell select{background:var(--navy);border:1px solid var(--navy3);border-radius:4px;color:var(--white);font-family:'IBM Plex Sans',monospace;font-size:11px;padding:3px 6px;cursor:pointer;max-width:160px;outline:none;}
@@ -97,6 +97,23 @@
   .modal select:focus{border-color:var(--teal);}
   .modal-actions{display:flex;gap:8px;justify-content:flex-end;}
   .modal-note{font-size:11px;color:var(--slate);margin-top:8px;line-height:1.5;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  /* ROLE RULES MODAL */
+  .modal-wide{width:560px;max-height:92vh;overflow-y:auto;}
+  .rules-section{margin-bottom:14px;}
+  .rules-section h4{font-size:11px;font-weight:600;color:var(--slate);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+  .rules-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .rules-field{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--slate-light);}
+  .rules-field input{background:var(--navy);border:1px solid var(--navy3);border-radius:5px;color:var(--white);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:7px 10px;outline:none;}
+  .rules-field input:focus{border-color:var(--teal);}
+  .rules-field input.invalid{border-color:var(--red);}
+  .rules-grid.three{grid-template-columns:1fr 1fr 1fr;}
+  .rules-field select{width:100%;margin-bottom:0;font-size:12px;padding:7px 8px;}
+  .rules-field .tier-label{display:flex;gap:4px;align-items:center;}
+  .rules-summary{background:var(--navy);border:1px solid var(--navy3);border-radius:6px;padding:10px 12px;font-size:11px;line-height:1.8;color:var(--slate-light);margin-bottom:12px;}
+  .rules-impact{font-size:12px;padding:8px 12px;border-radius:6px;margin-bottom:14px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);color:var(--amber-light);line-height:1.6;}
+  .rules-impact.error{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#fca5a5;}
+  .rules-impact.ok{background:rgba(34,197,94,.06);border-color:rgba(34,197,94,.25);color:var(--slate-light);}
   #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy2);border:1px solid var(--navy3);color:var(--white);padding:10px 18px;border-radius:7px;font-size:13px;opacity:0;transition:all .2s;pointer-events:none;z-index:300;white-space:nowrap;}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   .status-active{color:var(--green);}.status-inactive{color:var(--slate);}.status-noaccount{color:var(--amber);}
@@ -144,9 +161,9 @@
     <div class="main-panel">
       <div class="filters-bar">
         <div class="filter-group"><label>Officer</label><select id="filterOfficer" onchange="applyFilters()"><option value="">All Officers</option></select></div>
-        <div class="filter-group"><label>Role</label><select id="filterRole" onchange="applyFilters()"><option value="">All Roles</option><option>BM</option><option>VRM</option><option>BBRM</option></select></div>
+        <div class="filter-group"><label>Role</label><select id="filterRole" onchange="applyFilters()"><option value="">All Roles</option><option>BM</option><option>VRM</option><option>SBRM</option><option>BBRM</option></select></div>
         <div class="filter-group"><label>Market</label><select id="filterMarket" onchange="applyFilters()"><option value="">All Markets</option></select></div>
-        <div class="filter-group"><label>Rec. Role</label><select id="filterRecRole" onchange="applyFilters()"><option value="">All Rec. Roles</option><option>BM</option><option>VRM</option><option>BBRM</option><option value="NONE">No Rec.</option></select></div>
+        <div class="filter-group"><label>Rec. Role</label><select id="filterRecRole" onchange="applyFilters()"><option value="">All Rec. Roles</option><option>BM</option><option value="VRM">VRM / SBRM</option><option>BBRM</option><option value="NONE">No Rec.</option></select></div>
         <div class="filter-group"><label>Branch</label><select id="filterBranch" onchange="applyFilters()"><option value="">All Branches</option></select></div>
         <div class="filter-group"><label>Status</label><select id="filterStatus" onchange="applyFilters()"><option value="">All Statuses</option><option>Active</option><option>Inactive</option><option>No Account</option></select></div>
         <div class="filter-group"><label>Search</label><input type="text" id="searchInput" placeholder="Name or ID…" oninput="applyFilters()"></div>
@@ -222,6 +239,41 @@
     </div>
   </div>
 </div>
+<div class="modal-overlay" id="rulesModal">
+  <div class="modal modal-wide">
+    <h3>Role Assignment Rules</h3>
+    <p>These thresholds decide each client's recommended role. Only officers in the recommended role, within the geography set for that role, are offered when assigning.</p>
+    <div class="rules-section">
+      <h4>BM ceiling — client is BM only if below <em>both</em></h4>
+      <div class="rules-grid">
+        <label class="rules-field">Annual sales under ($)<input type="number" id="ruleBmSales" min="0" step="1000" oninput="previewRules()"></label>
+        <label class="rules-field">Credit exposure under ($)<input type="number" id="ruleBmCredit" min="0" step="1000" oninput="previewRules()"></label>
+      </div>
+    </div>
+    <div class="rules-section">
+      <h4>BBRM floor — client is BBRM if above <em>either</em></h4>
+      <div class="rules-grid">
+        <label class="rules-field">Annual sales over ($)<input type="number" id="ruleBbrmSales" min="0" step="1000" oninput="previewRules()"></label>
+        <label class="rules-field">Credit exposure over ($)<input type="number" id="ruleBbrmCredit" min="0" step="1000" oninput="previewRules()"></label>
+      </div>
+    </div>
+    <div class="rules-section">
+      <h4>Geography — where a client can move, by recommended role</h4>
+      <div class="rules-grid three">
+        <label class="rules-field"><span class="tier-label"><span class="role-badge role-BM">BM</span></span><select id="geoBM" onchange="previewRules()"></select></label>
+        <label class="rules-field"><span class="tier-label"><span class="role-badge role-VRM">VRM</span><span class="role-badge role-SBRM">SBRM</span></span><select id="geoVRM" onchange="previewRules()"></select></label>
+        <label class="rules-field"><span class="tier-label"><span class="role-badge role-BBRM">BBRM</span></span><select id="geoBBRM" onchange="previewRules()"></select></label>
+      </div>
+    </div>
+    <div class="rules-summary" id="rulesSummary"></div>
+    <div class="rules-impact" id="rulesImpact"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="margin-right:auto" onclick="resetRulesForm()">Restore Defaults</button>
+      <button class="btn btn-secondary" onclick="closeRulesModal()">Cancel</button>
+      <button class="btn btn-primary" id="rulesApplyBtn" onclick="applyRules()">Apply</button>
+    </div>
+  </div>
+</div>
 <div id="toast"></div>
 
 <script>
@@ -243,6 +295,242 @@ function snapshotAssignments() {
   undoStack.push(JSON.stringify(assignments));
   if (undoStack.length > MAX_HISTORY) undoStack.shift();
   redoStack = []; // any new action clears the redo stack
+}
+
+// ============================================================
+// ROLE RULES — editable sales / credit thresholds
+// ============================================================
+// Logic (boundaries identical to the original hard-coded version):
+//   BBRM : sales >  bbrmSalesMin  OR  credit >  bbrmCreditMin
+//   VRM  : otherwise, sales >= bmSalesMax OR credit >= bmCreditMax
+//   BM   : everything else (sales < bmSalesMax AND credit < bmCreditMax)
+const DEFAULT_RULES = {
+  bmSalesMax:1000000, bmCreditMax:100000, bbrmSalesMin:3000000, bbrmCreditMin:1000000,
+  // Geography the receiving officer must share with the client, keyed by recommended tier.
+  // SBRM follows the VRM entry because it is mapped to the VRM tier.
+  geo: { BM:'market', VRM:'market', BBRM:'market' }
+};
+const GEO_MODES = { branch:'Same branch', market:'Same market', any:'Any geography' };
+function cloneRules(r){ return { ...r, geo:{ ...r.geo } }; }
+const RULES_STORAGE_KEY = 'BoB_roleRules';
+
+// ROLE TIERS — maps each job role to the rule tier it follows.
+// Thresholds produce a tier (BM / VRM / BBRM); any role mapped to that tier is eligible.
+// To add a future role, add one line here (plus a .role-XXX badge color and a Role filter option).
+const ROLE_TIER = { BM:'BM', VRM:'VRM', SBRM:'VRM', BBRM:'BBRM' };
+function roleTier(role){ return ROLE_TIER[role] || role; }
+let ROLE_RULES = loadRules();
+
+function loadRules(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(RULES_STORAGE_KEY) || 'null');
+    if(saved){
+      const merged = { ...DEFAULT_RULES, ...saved, geo:{ ...DEFAULT_RULES.geo, ...(saved.geo||{}) } };
+      if(!validateRules(merged).length) return merged;
+    }
+  }catch(e){ /* storage blocked or corrupted — fall back to defaults */ }
+  return cloneRules(DEFAULT_RULES);
+}
+
+function saveRules(){
+  try{ localStorage.setItem(RULES_STORAGE_KEY, JSON.stringify(ROLE_RULES)); }catch(e){}
+}
+
+function rulesAreDefault(r=ROLE_RULES){
+  return ['bmSalesMax','bmCreditMax','bbrmSalesMin','bbrmCreditMin'].every(k=>r[k]===DEFAULT_RULES[k])
+      && Object.keys(DEFAULT_RULES.geo).every(t=>r.geo && r.geo[t]===DEFAULT_RULES.geo[t]);
+}
+
+function validateRules(r){
+  const labels = { bmSalesMax:'BM sales ceiling', bmCreditMax:'BM credit ceiling', bbrmSalesMin:'BBRM sales floor', bbrmCreditMin:'BBRM credit floor' };
+  const errs = [];
+  Object.keys(labels).forEach(k=>{
+    if(!Number.isFinite(r[k]) || r[k] < 0) errs.push(`${labels[k]} must be a number ≥ 0`);
+  });
+  if(!errs.length){
+    if(r.bmSalesMax  > r.bbrmSalesMin)  errs.push('BM sales ceiling can\'t be higher than the BBRM sales floor');
+    if(r.bmCreditMax > r.bbrmCreditMin) errs.push('BM credit ceiling can\'t be higher than the BBRM credit floor');
+  }
+  Object.keys(DEFAULT_RULES.geo).forEach(t=>{
+    if(!r.geo || !GEO_MODES[r.geo[t]]) errs.push(`Geography setting for ${t} is invalid`);
+  });
+  return errs;
+}
+
+// Does this officer satisfy the geography rule for the given tier?
+function geoMatch(row, o, tier, rules=ROLE_RULES){
+  const mode = (rules.geo && rules.geo[tier]) || 'market';
+  if(mode === 'branch') return o.branch === row.BRANCH;
+  if(mode === 'market') return o.market === row.MARKET;
+  return true; // 'any'
+}
+
+function computeRecRole(sales, credit, rules=ROLE_RULES){
+  if(sales > rules.bbrmSalesMin || credit > rules.bbrmCreditMin) return 'BBRM';
+  if(sales >= rules.bmSalesMax  || credit >= rules.bmCreditMax)  return 'VRM';
+  return 'BM';
+}
+
+// Re-derive _recRole / _mismatch on every parent after rules change
+function recomputeRoles(){
+  RAW_DATA.forEach(r=>{
+    r._recRole  = computeRecRole(r._salesNum, r._creditNum);
+    r._mismatch = !!r.ROLE && roleTier(r.ROLE) !== r._recRole;
+  });
+}
+
+// Would this pending assignment still be allowed under a given recommended role?
+function isAssignmentValid(row, code, recRole, rules=ROLE_RULES){
+  if(row._riskRating >= 15 || code === row.OFFICER_CODE) return false;
+  const o = OFFICERS.find(x=>x.code===code);
+  return !!o && roleTier(o.role) === recRole && geoMatch(row, o, recRole, rules);
+}
+
+// How many eligible officers would each client have under a set of rules?
+// Uses a count index instead of scanning OFFICERS per client, so it stays fast while typing.
+function eligibilityStats(rules){
+  const idx = {}, byCode = new Map(OFFICERS.map(o=>[o.code,o]));
+  OFFICERS.forEach(o=>{
+    const t = roleTier(o.role);
+    ['branch:'+o.branch, 'market:'+o.market, 'any:'].forEach(g=>{ const k=t+'|'+g; idx[k]=(idx[k]||0)+1; });
+  });
+  let stranded = 0, total = 0, n = 0;
+  RAW_DATA.forEach(r=>{
+    if(r._riskRating >= 15) return; // locked anyway
+    const tier = computeRecRole(r._salesNum, r._creditNum, rules);
+    const mode = rules.geo[tier];
+    const g = mode==='branch' ? 'branch:'+r.BRANCH : mode==='market' ? 'market:'+r.MARKET : 'any:';
+    let c = idx[tier+'|'+g] || 0;
+    const cur = byCode.get(r.OFFICER_CODE); // current officer can't receive their own client
+    if(cur && roleTier(cur.role)===tier && geoMatch(r, cur, tier, rules)) c--;
+    n++; total += c; if(c <= 0) stranded++;
+  });
+  return { stranded, avg: n ? total/n : 0 };
+}
+
+function findInvalidAssignments(rules){
+  const byId = new Map(RAW_DATA.map(r=>[r.PARENT_ID, r]));
+  return Object.entries(assignments)
+    .filter(([pid,a])=>{
+      const row = byId.get(pid);
+      if(!row) return false; // not in this dataset — leave untouched
+      return !isAssignmentValid(row, a.code, computeRecRole(row._salesNum, row._creditNum, rules), rules);
+    })
+    .map(([pid])=>pid);
+}
+
+// ---- Modal UI ----
+const RULE_INPUTS = { bmSalesMax:'ruleBmSales', bmCreditMax:'ruleBmCredit', bbrmSalesMin:'ruleBbrmSales', bbrmCreditMin:'ruleBbrmCredit' };
+
+const GEO_SELECTS = { BM:'geoBM', VRM:'geoVRM', BBRM:'geoBBRM' };
+
+function fillRulesForm(r){
+  Object.entries(RULE_INPUTS).forEach(([k,id])=>{ document.getElementById(id).value = r[k]; });
+  Object.entries(GEO_SELECTS).forEach(([t,id])=>{
+    const sel = document.getElementById(id);
+    if(!sel.options.length) Object.entries(GEO_MODES).forEach(([v,label])=>sel.add(new Option(label, v)));
+    sel.value = r.geo[t];
+  });
+}
+
+function readRulesForm(){
+  const out = {};
+  Object.entries(RULE_INPUTS).forEach(([k,id])=>{
+    const raw = document.getElementById(id).value.trim();
+    out[k] = raw === '' ? NaN : Number(raw); // Number('') is 0, so treat blank as invalid explicitly
+  });
+  out.geo = {};
+  Object.entries(GEO_SELECTS).forEach(([t,id])=>{ out.geo[t] = document.getElementById(id).value; });
+  return out;
+}
+
+function openRulesModal(){
+  fillRulesForm(ROLE_RULES);
+  previewRules();
+  document.getElementById('rulesModal').style.display='flex';
+}
+function closeRulesModal(){ document.getElementById('rulesModal').style.display='none'; }
+function resetRulesForm(){ fillRulesForm(DEFAULT_RULES); previewRules(); }
+
+function previewRules(){
+  const cand = readRulesForm();
+  const errs = validateRules(cand);
+  const fmt = n => Number.isFinite(n) ? '$' + n.toLocaleString() : '—';
+
+  Object.entries(RULE_INPUTS).forEach(([k,id])=>{
+    document.getElementById(id).classList.toggle('invalid', !Number.isFinite(cand[k]) || cand[k] < 0);
+  });
+
+  const geoTxt = t => `<span style="color:var(--slate)"> · ${(GEO_MODES[cand.geo[t]]||'').toLowerCase()}</span>`;
+  document.getElementById('rulesSummary').innerHTML =
+    `<span class="role-badge role-BM">BM</span> sales &lt; ${fmt(cand.bmSalesMax)} <b>and</b> credit &lt; ${fmt(cand.bmCreditMax)}${geoTxt('BM')}<br>` +
+    `<span class="role-badge role-VRM">VRM</span> <span class="role-badge role-SBRM">SBRM</span> everything in between${geoTxt('VRM')}<br>` +
+    `<span class="role-badge role-BBRM">BBRM</span> sales &gt; ${fmt(cand.bbrmSalesMin)} <b>or</b> credit &gt; ${fmt(cand.bbrmCreditMin)}${geoTxt('BBRM')}`;
+
+  const impact = document.getElementById('rulesImpact');
+  const btn = document.getElementById('rulesApplyBtn');
+  if(errs.length){
+    impact.className = 'rules-impact error';
+    impact.innerHTML = errs.join('<br>');
+    btn.disabled = true;
+    return;
+  }
+  btn.disabled = false;
+
+  // Dry-run the candidate rules against the loaded data without changing anything
+  let changed = 0; const moves = {};
+  RAW_DATA.forEach(r=>{
+    const nr = computeRecRole(r._salesNum, r._creditNum, cand);
+    if(nr !== r._recRole){ changed++; const k = `${r._recRole} → ${nr}`; moves[k] = (moves[k]||0) + 1; }
+  });
+  const now = eligibilityStats(ROLE_RULES), next = eligibilityStats(cand);
+  const invalid = findInvalidAssignments(cand).length;
+
+  const lines = [];
+  if(changed){
+    const moveLines = Object.entries(moves).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k}: ${v.toLocaleString()}`).join(' · ');
+    lines.push(`<b>${changed.toLocaleString()}</b> client(s) would change recommended role<br><span style="font-family:'IBM Plex Mono',monospace;font-size:11px">${moveLines}</span>`);
+  }
+  if(Math.abs(now.avg - next.avg) >= 0.05)
+    lines.push(`Avg. eligible officers per client: <b>${now.avg.toFixed(1)} → ${next.avg.toFixed(1)}</b>`);
+  if(now.stranded !== next.stranded)
+    lines.push(`Clients with no eligible officer: <b>${now.stranded.toLocaleString()} → ${next.stranded.toLocaleString()}</b>`);
+  if(invalid)
+    lines.push(`⚠ <b>${invalid}</b> pending assignment(s) would no longer be eligible and will be removed.`);
+
+  if(!lines.length){
+    impact.className = 'rules-impact ok';
+    impact.textContent = 'No change to recommended roles, officer options, or pending assignments.';
+    return;
+  }
+  impact.className = 'rules-impact';
+  impact.innerHTML = lines.join('<br>');
+}
+
+function applyRules(){
+  const cand = readRulesForm();
+  if(validateRules(cand).length) return;
+  const invalid = findInvalidAssignments(cand);
+  if(invalid.length && !confirm(`${invalid.length} pending assignment(s) no longer meet the new rules and will be removed.\n\nUndo history will also be cleared. Continue?`)) return;
+
+  ROLE_RULES = cand;
+  saveRules();
+  recomputeRoles();
+  invalid.forEach(pid=>delete assignments[pid]);
+  saveAssignments();
+  // Old undo states may contain assignments that break the new rules, so start history fresh
+  undoStack = []; redoStack = [];
+
+  closeRulesModal();
+  updateRulesBtn();
+  applyFilters();
+  renderSidePanel();
+  showToast(invalid.length ? `Rules updated · ${invalid.length} assignment(s) removed` : 'Rules updated');
+}
+
+function updateRulesBtn(){
+  const b = document.getElementById('rulesBtn');
+  if(b) b.textContent = rulesAreDefault() ? '⚙ Role Rules' : '⚙ Role Rules (custom)';
 }
 
 let selectedRows = new Set();
@@ -321,11 +609,8 @@ function processData(clientRows, employeeRows){
   RAW_DATA = Object.entries(CHILD_MAP).map(([pid,children])=>{
     const parentRow = children.find(r=>r.PARENT_ID===r.CHILD_ID)||children[0];
     const sales=parseDollar(parentRow.ANNUAL_SALES_SIZE), credit=parseDollar(parentRow.CREDIT_EXPOSURE);
-    let recRole='NONE';
-    if(sales>3000000||credit>1000000) recRole='BBRM';
-    else if((sales>=1000000&&sales<=3000000)||(credit>=100000&&credit<=1000000)) recRole='VRM';
-    else if(sales<1000000&&credit<100000) recRole='BM';
-    const mismatch = parentRow.ROLE && recRole!=='NONE' && parentRow.ROLE!==recRole;
+    const recRole = computeRecRole(sales, credit);
+    const mismatch = !!parentRow.ROLE && roleTier(parentRow.ROLE)!==recRole;
     const riskRating = parseInt(parentRow.RISK_RATING, 10) || 0;
     return { ...parentRow, _childCount:children.length, _salesNum:sales, _creditNum:credit, _recRole:recRole, _mismatch:mismatch, _riskRating:riskRating };
   });
@@ -343,7 +628,9 @@ function processData(clientRows, employeeRows){
   document.getElementById('appScreen').style.display='block';
   document.getElementById('headerActions').innerHTML=`
     <span style="font-size:12px;color:var(--slate);margin-right:4px">${RAW_DATA.length.toLocaleString()} parents · ${clientRows.length.toLocaleString()} children · ${OFFICERS.length} officers</span>
+    <button class="btn btn-secondary btn-sm" id="rulesBtn" onclick="openRulesModal()">⚙ Role Rules</button>
     <button class="btn btn-upload btn-sm" onclick="resetApp()">⬆ Load New Files</button>`;
+  updateRulesBtn();
   filteredData=[...RAW_DATA];
   currentSessionKey = makeSessionKey(clientRows, employeeRows);
   loadAssignments();
@@ -354,14 +641,14 @@ function processData(clientRows, employeeRows){
 
 function parseDollar(s){ if(!s) return 0; return parseFloat(s.replace(/[$,\s]/g,''))||0; }
 
-// ELIGIBILITY — officer must match the client's recommended role and same market
+// ELIGIBILITY — officer must match the client's recommended tier and that tier's geography rule
 function getEligibleOfficers(row){
   if(row._recRole==='NONE') return [];
   if(row._riskRating >= 15) return []; // High risk clients cannot be reassigned
   return OFFICERS.filter(o=>
     o.code!==row.OFFICER_CODE &&
-    o.role===row._recRole &&
-    o.market===row.MARKET
+    roleTier(o.role)===row._recRole &&
+    geoMatch(row, o, row._recRole)
   );
 }
 
@@ -643,7 +930,7 @@ function openBulkModal(){
   bs.innerHTML='<option value="">-- Select Officer --</option>';
   allEligible.forEach(o=>bs.add(new Option(`${o.name} (${o.role})`,o.code)));
   document.getElementById('bulkSelCount').textContent=`${selectedRows.size} client(s) selected`;
-  document.getElementById('bulkNote').textContent=allEligible.length>0?'Officers shown are eligible for ALL selected clients based on sales size and credit exposure rules.':'⚠ No single officer is eligible for all selected clients. Deselect incompatible clients.';
+  document.getElementById('bulkNote').textContent=allEligible.length>0?'Officers shown are eligible for ALL selected clients based on role and geography rules.':'⚠ No single officer is eligible for all selected clients. Deselect incompatible clients.';
   document.getElementById('bulkModal').style.display='flex';
 }
 function closeBulkModal(){document.getElementById('bulkModal').style.display='none';}
